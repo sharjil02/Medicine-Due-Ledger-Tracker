@@ -1,0 +1,12 @@
+{
+  "name": "medicine-due-tracker",
+  "version": "1.0.0",
+  "description": "Medicine Due & Monthly Ledger Tracker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["medicine", "ledger", "tracker", "accounting"],
+  "author": "",
+  "license": "ISC"
+}

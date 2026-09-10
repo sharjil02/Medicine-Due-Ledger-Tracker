@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicine Due & Monthly Ledger Tracker</title>
+  <meta name="description" content="Track medicine credit purchases, monthly payments, dues, and carry-forward balances easily.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Chart.js for Visual Trends -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+      <div class="nav-left">
+        <div class="brand-logo">
+          <div class="logo-icon">
+            <i class="fa-solid fa-book-medical"></i>
+          </div>
+          <div class="logo-text">
+            <h1 id="app-title-text">Medicine Due & Ledger Tracker</h1>
+            <span class="sub-text"><i class="fa-solid fa-notes-medical"></i> Personal Credit & Monthly Due Ledger</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <!-- Quick Action: Demo Data Toggle -->
+        <button id="btn-demo-data" class="btn-outline-pill" title="Load sample records for testing">
+          <i class="fa-solid fa-database"></i> <span>Demo Data</span>
+        </button>
+
+        <!-- Statement / Print Button -->
+        <button id="btn-open-statement" class="btn-outline-pill" title="View & Print Monthly Statement">
+          <i class="fa-solid fa-file-invoice"></i> <span>Monthly Statement</span>
+        </button>
+
+        <!-- Backup & Settings Button -->
+        <button id="btn-open-settings" class="btn-icon" title="Settings & Backup">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="btn-toggle-theme" class="btn-icon" title="Toggle Dark / Light Mode">
+          <i class="fa-solid fa-moon" id="theme-icon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- ========================================== -->
+      <!-- MONTHLY SHEET NAVIGATION & SWITCHER BAR    -->
+      <!-- ========================================== -->
+      <section class="month-sheet-navigator">
+        <div class="nav-month-controls">
+          <button id="btn-prev-month" class="btn-month-nav" title="Previous Month">
+            <i class="fa-solid fa-chevron-left"></i> <span class="hide-mobile">Prev Month</span>
+          </button>
+
+          <div class="current-month-display">
+            <div class="sheet-badge">
+              <i class="fa-regular fa-calendar-days"></i> <span>Active Monthly Sheet:</span>
+            </div>
+            <h2 id="active-month-title">August 2026</h2>
+            <span class="sheet-status-tag" id="sheet-status-tag">Current Month</span>
+          </div>
+
+          <button id="btn-next-month" class="btn-month-nav" title="Next Month">
+            <span class="hide-mobile">Next Month</span> <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <div class="nav-month-options">
+          <div class="view-mode-toggle">
+            <button class="btn-mode-pill active" id="btn-mode-month" data-mode="month">
+              <i class="fa-solid fa-table-list"></i> Month Sheet View
+            </button>
+            <button class="btn-mode-pill" id="btn-mode-all" data-mode="all">
+              <i class="fa-solid fa-receipt"></i> All Records Ledger
+            </button>
+          </div>
+
+          <div class="month-jump-select-wrap">
+            <select id="jump-month-select" class="custom-select-sm">
+              <!-- Populated dynamically via JS -->
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- MONTHLY FINANCIAL CALCULATION RIBBON       -->
+      <!-- ========================================== -->
+      <section class="month-calc-ribbon" id="month-calc-ribbon">
+        <!-- 1. Opening Due from previous months -->
+        <div class="ribbon-card card-opening-due">
+          <div class="ribbon-header">
+            <span class="ribbon-label">Previous Month Due (Opening Due)</span>
+            <div class="ribbon-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+          </div>
+          <div class="ribbon-value text-amber">
+            <span class="currency-sign">Tk</span>
+            <span id="ribbon-opening-due">0.00</span>
+          </div>
+          <div class="ribbon-footer">Balance brought forward from prior month</div>
+        </div>
+
+        <!-- Math Operator: PLUS (+) -->
+        <div class="math-operator-pill"><i class="fa-solid fa-plus"></i></div>
+
+        <!-- 2. This Month Purchases -->
+        <div class="ribbon-card card-month-purchases">
+          <div class="ribbon-header">
+            <span class="ribbon-label">This Month Purchases (+)</span>
+            <div class="ribbon-icon"><i class="fa-solid fa-cart-plus"></i></div>
+          </div>
+          <div class="ribbon-value text-danger">
+            <span class="currency-sign">Tk</span>
+            <span id="ribbon-month-purchases">0.00</span>
+          </div>
+          <div class="ribbon-footer" id="ribbon-purchase-units">0 purchases</div>
+        </div>
+
+        <!-- Math Operator: MINUS (-) -->
+        <div class="math-operator-pill"><i class="fa-solid fa-minus"></i></div>
+
+        <!-- 3. This Month Payments -->
+        <div class="ribbon-card card-month-payments">
+          <div class="ribbon-header">
+            <span class="ribbon-label">This Month Payments (-)</span>
+            <div class="ribbon-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+          </div>
+          <div class="ribbon-value text-success">
+            <span class="currency-sign">Tk</span>
+            <span id="ribbon-month-payments">0.00</span>
+          </div>
+          <div class="ribbon-footer" id="ribbon-payment-count">0 payments made</div>
+        </div>
+
+        <!-- Math Operator: EQUALS (=) -->
+        <div class="math-operator-pill equals"><i class="fa-solid fa-equals"></i></div>
+
+        <!-- 4. Month Closing Due (Carried to next month) -->
+        <div class="ribbon-card card-closing-due">
+          <div class="ribbon-header">
+            <span class="ribbon-label">Month-End Due (Closing Due)</span>
+            <div class="ribbon-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
+          </div>
+          <div class="ribbon-value text-danger font-extrabold">
+            <span class="currency-sign">Tk</span>
+            <span id="ribbon-closing-due">0.00</span>
+          </div>
+          <div class="ribbon-footer" id="ribbon-closing-desc">Carried forward to next month's sheet</div>
+        </div>
+      </section>
+
+      <!-- Primary Action Buttons -->
+      <section class="action-banner">
+        <div class="action-left">
+          <button id="btn-add-medicine" class="btn-primary-action">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>+ Add Medicine (Due)</span>
+          </button>
+          
+          <button id="btn-add-payment" class="btn-secondary-action">
+            <i class="fa-solid fa-wallet"></i>
+            <span>+ Make Payment</span>
+          </button>
+        </div>
+
+        <div class="action-right">
+          <!-- All-Time Due summary pill -->
+          <div class="all-time-due-badge">
+            <span>Total Outstanding Due:</span>
+            <strong id="all-time-due-val">Tk 0.00</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analytics & Monthly Chart -->
+      <section class="analytics-section" id="analytics-section">
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="header-title">
+              <i class="fa-solid fa-chart-column text-accent"></i>
+              <h3>Monthly Expense vs Payment Trend</h3>
+            </div>
+            <div class="header-tools">
+              <button class="btn-ghost-sm" id="btn-toggle-chart" title="Expand / Collapse Chart">
+                <i class="fa-solid fa-chevron-up" id="chart-toggle-icon"></i>
+              </button>
+            </div>
+          </div>
+          <div class="chart-container-wrapper" id="chart-container-body">
+            <canvas id="monthlyTrendChart" height="95"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Ledger & Transaction Records Section -->
+      <section class="ledger-section">
+        <div class="section-card">
+          <div class="ledger-card-header">
+            <div class="ledger-title-group">
+              <div class="title-with-badge">
+                <h3 id="ledger-section-heading">Monthly Sheet Ledger</h3>
+                <span class="badge-count" id="ledger-total-count">0</span>
+              </div>
+              <p class="ledger-subtitle" id="ledger-section-sub">Itemized transactions with previous month due carry-forward</p>
+            </div>
+
+            <!-- Search and Filter Tabs -->
+            <div class="ledger-controls">
+              <!-- Type Filter Tabs -->
+              <div class="tab-pill-group">
+                <button class="tab-pill active" data-filter="all">All Records</button>
+                <button class="tab-pill" data-filter="purchase"><i class="fa-solid fa-cart-shopping"></i> Purchases</button>
+                <button class="tab-pill" data-filter="payment"><i class="fa-solid fa-money-bill-wave"></i> Payments</button>
+              </div>
+
+              <!-- Search Bar -->
+              <div class="search-input-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="ledger-search-input" placeholder="Search by medicine name or notes...">
+                <button id="btn-clear-search" class="clear-search-btn hidden">&times;</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Responsive Ledger Table -->
+          <div class="table-responsive">
+            <table class="ledger-table" id="ledger-table">
+              <thead>
+                <tr>
+                  <th class="th-date">Date & Time</th>
+                  <th class="th-type">Type</th>
+                  <th class="th-details">Item Details (Name / Quantity / Unit)</th>
+                  <th class="th-debit text-right">Expense (Due +)</th>
+                  <th class="th-credit text-right">Paid (Credit -)</th>
+                  <th class="th-balance text-right">Remaining Due</th>
+                  <th class="th-action text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-tbody">
+                <!-- Populated dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-state hidden" id="empty-state-view">
+            <div class="empty-state-icon">
+              <i class="fa-solid fa-file-circle-plus"></i>
+            </div>
+            <h4 id="empty-state-heading">No records for this month!</h4>
+            <p>Click '+ Add Medicine' to record a purchase on credit or '+ Make Payment' to record money paid.</p>
+            <div class="empty-actions">
+              <button class="btn-primary-action btn-sm" onclick="document.getElementById('btn-add-medicine').click()">
+                <i class="fa-solid fa-plus-circle"></i> <span>+ Add Medicine</span>
+              </button>
+              <button class="btn-outline-pill btn-sm" onclick="app.loadDemoData()">
+                <i class="fa-solid fa-magic-wand-sparkles"></i> <span>Load Sample Data</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Footer Summary -->
+          <div class="table-footer-summary" id="table-footer-summary">
+            <div class="footer-summary-item">
+              <span>Opening Due:</span>
+              <strong class="text-amber" id="footer-sum-opening">Tk 0.00</strong>
+            </div>
+            <div class="footer-summary-item">
+              <span>+ Purchases:</span>
+              <strong class="text-danger" id="footer-sum-debit">Tk 0.00</strong>
+            </div>
+            <div class="footer-summary-item">
+              <span>- Paid:</span>
+              <strong class="text-success" id="footer-sum-credit">Tk 0.00</strong>
+            </div>
+            <div class="footer-summary-item highlight">
+              <span>= Month Closing Due:</span>
+              <strong class="text-danger font-lg" id="footer-sum-balance">Tk 0.00</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p><i class="fa-solid fa-shield-heart"></i> <strong>Medicine Monthly Due Tracker</strong> — Your reliable and modern credit ledger.</p>
+        <span class="footer-note"><i class="fa-solid fa-lock"></i> All data is securely saved in your browser's local storage.</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL 1: ADD / EDIT MEDICINE PURCHASE MODAL    -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="modal-medicine" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge icon-purchase">
+            <i class="fa-solid fa-pills"></i>
+          </div>
+          <div>
+            <h3 id="modal-medicine-title">Add Medicine Purchase (On Credit)</h3>
+            <p class="modal-sub">Enter details of medicine purchased on due</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close-modal>&times;</button>
+      </div>
+
+      <form id="form-medicine" autocomplete="off">
+        <input type="hidden" id="medicine-edit-id" value="">
+
+        <div class="modal-body">
+          <!-- Quick Popular Medicines Autocomplete Tags -->
+          <div class="quick-tags-section">
+            <label class="form-label-sm"><i class="fa-solid fa-bolt text-warning"></i> <span>Popular Medicines (Click to quick fill):</span></label>
+            <div class="quick-chips-scroll" id="quick-medicine-chips">
+              <button type="button" class="chip-btn" data-name="Napa Extra 500mg">Napa Extra</button>
+              <button type="button" class="chip-btn" data-name="Seclo 20mg">Seclo 20</button>
+              <button type="button" class="chip-btn" data-name="Sergel 20mg">Sergel 20</button>
+              <button type="button" class="chip-btn" data-name="Maxpro 20mg">Maxpro 20</button>
+              <button type="button" class="chip-btn" data-name="Pantonix 20mg">Pantonix 20</button>
+              <button type="button" class="chip-btn" data-name="Monas 10mg">Monas 10</button>
+              <button type="button" class="chip-btn" data-name="Ceevit 250mg">Ceevit</button>
+              <button type="button" class="chip-btn" data-name="Alatrol 10mg">Alatrol</button>
+              <button type="button" class="chip-btn" data-name="Fexo 120mg">Fexo 120</button>
+              <button type="button" class="chip-btn" data-name="Calbo-D">Calbo-D</button>
+              <button type="button" class="chip-btn" data-name="Thyrox 50mcg">Thyrox 50</button>
+              <button type="button" class="chip-btn" data-name="Insulin / Diabetes Care">Insulin</button>
+            </div>
+          </div>
+
+          <!-- Medicine Name (Full Width) -->
+          <div class="form-group">
+            <label for="med-name" class="form-label required">Medicine Name</label>
+            <div class="input-icon-wrap">
+              <i class="fa-solid fa-capsules"></i>
+              <input type="text" id="med-name" class="form-input" placeholder="e.g., Napa Extra, Seclo 20, Pantonix..." required>
+            </div>
+          </div>
+
+          <!-- Purchase Date & Time -->
+          <div class="form-group">
+            <label for="med-date" class="form-label required">Purchase Date & Time</label>
+            <div class="input-icon-wrap">
+              <i class="fa-regular fa-calendar-days"></i>
+              <input type="datetime-local" id="med-date" class="form-input" required>
+            </div>
+          </div>
+
+          <!-- Quantity Unit Selector Segment (Box vs Strip vs Piece) -->
+          <div class="form-group">
+            <label class="form-label required">Select Unit Type</label>
+            <div class="unit-toggle-group">
+              <label class="unit-radio-card">
+                <input type="radio" name="med-unit" value="box" checked>
+                <div class="unit-card-content">
+                  <i class="fa-solid fa-box-open"></i>
+                  <span class="unit-title">Box</span>
+                  <small class="unit-desc">Full packet/carton</small>
+                </div>
+              </label>
+
+              <label class="unit-radio-card">
+                <input type="radio" name="med-unit" value="strip">
+                <div class="unit-card-content">
+                  <i class="fa-solid fa-tablets"></i>
+                  <span class="unit-title">Strip / Leaf</span>
+                  <small class="unit-desc">10/15 tablets strip</small>
+                </div>
+              </label>
+
+              <label class="unit-radio-card">
+                <input type="radio" name="med-unit" value="piece">
+                <div class="unit-card-content">
+                  <i class="fa-solid fa-circle-dot"></i>
+                  <span class="unit-title">Piece / Bottle</span>
+                  <small class="unit-desc">Single tablet / syrup</small>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Quantity and Unit Price Calculation Row -->
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="med-qty" class="form-label required" id="label-med-qty">Quantity</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-hashtag"></i>
+                <input type="number" id="med-qty" class="form-input" min="0.1" step="any" placeholder="1" value="1" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="med-unit-price" class="form-label" id="label-unit-price">Price per Unit (Tk)</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-tag"></i>
+                <input type="number" id="med-unit-price" class="form-input" min="0" step="any" placeholder="0.00">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="med-total-price" class="form-label required">Total Price (Tk)</label>
+              <div class="input-icon-wrap highlight-input">
+                <span class="currency-prefix" id="currency-prefix-med">Tk</span>
+                <input type="number" id="med-total-price" class="form-input text-bold" min="0.1" step="any" placeholder="0.00" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Calculation Helper Bar -->
+          <div class="calc-helper-bar" id="calc-helper-bar">
+            <i class="fa-solid fa-calculator text-accent"></i>
+            <span id="calc-formula-text">Calc: 1 Box × Tk 0.00 = Tk 0.00</span>
+          </div>
+
+          <!-- Notes / Prescription details -->
+          <div class="form-group">
+            <label for="med-notes" class="form-label">Notes / Prescription Info (Optional)</label>
+            <div class="input-icon-wrap">
+              <i class="fa-solid fa-pen-to-square"></i>
+              <input type="text" id="med-notes" class="form-input" placeholder="e.g., Doctor prescription info, morning/night dosage...">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-outline-pill" data-close-modal>Cancel</button>
+          <button type="submit" class="btn-primary-action" id="btn-save-medicine">
+            <i class="fa-solid fa-check"></i> <span>Save Entry</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- MODAL 2: ADD PAYMENT / SETTLEMENT MODAL        -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="modal-payment" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge icon-payment">
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+          </div>
+          <div>
+            <h3 id="modal-payment-title">Record Payment / Deposit</h3>
+            <p class="modal-sub">Log monthly or installment payment made on due balance</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close-modal>&times;</button>
+      </div>
+
+      <form id="form-payment" autocomplete="off">
+        <input type="hidden" id="payment-edit-id" value="">
+
+        <div class="modal-body">
+          <!-- Live Outstanding Due Banner -->
+          <div class="due-reminder-box">
+            <div class="reminder-text">
+              <span>Total outstanding due is currently:</span>
+              <strong class="text-danger font-lg"><span class="currency-prefix-inline">Tk </span><span id="payment-modal-due-val">0.00</span></strong>
+            </div>
+            <button type="button" class="btn-outline-pill btn-xs" id="btn-pay-full-due">
+              Pay Full Balance
+            </button>
+          </div>
+
+          <!-- Payment Amount with Quick Presets -->
+          <div class="form-group">
+            <label for="pay-amount" class="form-label required">Payment Amount (Tk)</label>
+            <div class="input-icon-wrap highlight-input-green">
+              <span class="currency-prefix text-success" id="currency-prefix-pay">Tk</span>
+              <input type="number" id="pay-amount" class="form-input text-bold text-success font-lg" min="1" step="any" placeholder="0.00" required>
+            </div>
+            <!-- Quick preset buttons -->
+            <div class="quick-preset-amounts">
+              <button type="button" class="preset-pill" data-amount="500">Tk 500</button>
+              <button type="button" class="preset-pill" data-amount="1000">Tk 1,000</button>
+              <button type="button" class="preset-pill" data-amount="2000">Tk 2,000</button>
+              <button type="button" class="preset-pill" data-amount="5000">Tk 5,000</button>
+            </div>
+          </div>
+
+          <!-- Payment Date & Method -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="pay-date" class="form-label required">Payment Date & Time</label>
+              <div class="input-icon-wrap">
+                <i class="fa-regular fa-calendar-days"></i>
+                <input type="datetime-local" id="pay-date" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="pay-method" class="form-label required">Payment Method</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-credit-card"></i>
+                <select id="pay-method" class="form-input select-custom" required>
+                  <option value="Cash">Cash</option>
+                  <option value="bKash">bKash</option>
+                  <option value="Nagad">Nagad</option>
+                  <option value="Card">Credit/Debit Card</option>
+                  <option value="Bank">Bank Transfer</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- After Payment Projected Balance -->
+          <div class="projected-due-box" id="projected-due-box">
+            <span>Remaining due after this payment will be:</span>
+            <strong id="projected-due-val">Tk 0.00</strong>
+          </div>
+
+          <!-- Payment Notes / TrxID -->
+          <div class="form-group">
+            <label for="pay-notes" class="form-label">Notes / TrxID (Optional)</label>
+            <div class="input-icon-wrap">
+              <i class="fa-solid fa-comment-dots"></i>
+              <input type="text" id="pay-notes" class="form-input" placeholder="e.g., Monthly installment payment / TrxID...">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-outline-pill" data-close-modal>Cancel</button>
+          <button type="submit" class="btn-success-action" id="btn-save-payment">
+            <i class="fa-solid fa-check"></i> <span>Save Payment</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- MODAL 3: MONTHLY STATEMENT & PRINT PREVIEW     -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="modal-statement" aria-hidden="true">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge icon-statement">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
+          </div>
+          <div>
+            <h3>Monthly Statement & Receipt Preview</h3>
+            <p class="modal-sub">Printable receipt / ledger statement</p>
+          </div>
+        </div>
+        <div class="header-action-group">
+          <button class="btn-outline-pill btn-sm" id="btn-print-statement">
+            <i class="fa-solid fa-print"></i> <span>Print / PDF</span>
+          </button>
+          <button class="modal-close-btn" data-close-modal>&times;</button>
+        </div>
+      </div>
+
+      <div class="modal-body statement-body" id="printable-statement-area">
+        <!-- Printable Header -->
+        <div class="print-header-brand">
+          <div class="print-brand-title">
+            <h2>Medicine Monthly Ledger Statement</h2>
+            <p>Personal Credit & Settlement Record</p>
+          </div>
+          <div class="print-meta-box">
+            <p><strong>Generated Date:</strong> <span id="print-generated-date">-</span></p>
+            <p><strong>Statement Month:</strong> <span id="print-period-range">Current Month</span></p>
+          </div>
+        </div>
+
+        <!-- Printable Formula Breakdown Banner -->
+        <div class="print-formula-box">
+          <div class="print-f-item">
+            <small>Previous Month Due</small>
+            <strong class="text-amber" id="print-opening-due">Tk 0.00</strong>
+          </div>
+          <div class="print-f-symbol">+</div>
+          <div class="print-f-item">
+            <small>This Month Purchases</small>
+            <strong id="print-total-purchases">Tk 0.00</strong>
+          </div>
+          <div class="print-f-symbol">-</div>
+          <div class="print-f-item">
+            <small>This Month Paid</small>
+            <strong class="text-success" id="print-total-paid">Tk 0.00</strong>
+          </div>
+          <div class="print-f-symbol">=</div>
+          <div class="print-f-item highlight">
+            <small>Month-End Closing Due</small>
+            <strong class="text-danger" id="print-total-due">Tk 0.00</strong>
+          </div>
+        </div>
+
+        <!-- Printable Table -->
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Details & Medicine</th>
+              <th>Quantity / Unit</th>
+              <th class="text-right">Purchases (Tk)</th>
+              <th class="text-right">Payments (Tk)</th>
+              <th class="text-right">Balance Due (Tk)</th>
+            </tr>
+          </thead>
+          <tbody id="print-table-tbody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+
+        <!-- Signatures for printed receipt -->
+        <div class="print-signatures">
+          <div class="sign-block">
+            <div class="sign-line"></div>
+            <span>Signature</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-outline-pill" data-close-modal>Close</button>
+        <button type="button" class="btn-primary-action" id="btn-print-statement-bottom">
+          <i class="fa-solid fa-print"></i> <span>Print / Save PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- MODAL 4: SETTINGS, BACKUP & RESTORE            -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="modal-settings" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge icon-settings">
+            <i class="fa-solid fa-sliders"></i>
+          </div>
+          <div>
+            <h3>Settings & Backup</h3>
+            <p class="modal-sub">Change currency symbol, export backup, and restore</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close-modal>&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Currency Symbol Setting -->
+        <div class="settings-section-item">
+          <h4><i class="fa-solid fa-money-bill-wave"></i> Currency Symbol</h4>
+          <div class="input-icon-wrap mt-2">
+            <i class="fa-solid fa-coins"></i>
+            <select id="settings-currency-select" class="form-input select-custom">
+              <option value="Tk " selected>Tk (English Taka)</option>
+              <option value="BDT ">BDT (Bangladesh Taka)</option>
+              <option value="$">$ (USD / Dollar)</option>
+              <option value="£">£ (GBP British Pound)</option>
+              <option value="€">€ (EUR Euro)</option>
+            </select>
+          </div>
+          <button type="button" class="btn-primary-action btn-sm mt-2" id="btn-save-shop-name">
+            <i class="fa-solid fa-floppy-disk"></i> <span>Save Settings</span>
+          </button>
+        </div>
+
+        <hr class="settings-divider">
+
+        <!-- Backup Export Section -->
+        <div class="settings-section-item">
+          <h4><i class="fa-solid fa-download"></i> Data Backup (Export JSON)</h4>
+          <p class="text-muted-sm">Download a backup of all your transactions and payments safely.</p>
+          <button type="button" class="btn-outline-pill btn-sm mt-2" id="btn-export-backup">
+            <i class="fa-solid fa-file-arrow-down"></i> <span>Download JSON Backup</span>
+          </button>
+        </div>
+
+        <hr class="settings-divider">
+
+        <!-- Restore Import Section -->
+        <div class="settings-section-item">
+          <h4><i class="fa-solid fa-upload"></i> Restore Backup (Import JSON)</h4>
+          <p class="text-muted-sm">Upload a previously saved JSON backup file to restore records.</p>
+          <input type="file" id="input-import-backup" accept=".json" class="file-input-hidden">
+          <button type="button" class="btn-outline-pill btn-sm mt-2" id="btn-trigger-import">
+            <i class="fa-solid fa-file-arrow-up"></i> <span>Select Backup File</span>
+          </button>
+        </div>
+
+        <hr class="settings-divider">
+
+        <!-- Reset All Data -->
+        <div class="settings-section-item danger-zone">
+          <h4 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone (Clear Data)</h4>
+          <p class="text-muted-sm">Are you sure you want to delete all entries and start over?</p>
+          <button type="button" class="btn-danger-outline btn-sm mt-2" id="btn-clear-all-data">
+            <i class="fa-solid fa-trash-can"></i> <span>Reset All Records</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-primary-action" data-close-modal>Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
